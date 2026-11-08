@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}カテゴリ管理 - TODO Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-3">
+  <div class="col-12 col-md-8 col-lg-6">
+    <h5 class="mb-3"><i class="bi bi-tags me-1 text-primary"></i>カテゴリ管理</h5>
+
+    <!-- 新規追加フォーム -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-primary text-white">
+        <i class="bi bi-plus-circle me-1"></i>新しいカテゴリを追加
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('categories.new') }}"
+              class="row g-2 align-items-end">
+          <div class="col-12 col-sm-5">
+            <label class="form-label small">カテゴリ名</label>
+            <input type="text" class="form-control" name="name"
+                   required maxlength="50" placeholder="例: 仕事">
+          </div>
+          <div class="col-6 col-sm-3">
+            <label class="form-label small">色</label>
+            <input type="color" class="form-control form-control-color w-100"
+                   name="color" value="#3498db">
+          </div>
+          <div class="col-6 col-sm-4">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-plus-lg me-1"></i>追加
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- カテゴリ一覧 -->
+    {% if cat_data %}
+    <div class="list-group shadow-sm">
+      {% for item in cat_data %}
+      {% set c = item.category %}
+      <div class="list-group-item border-0 mb-2 rounded shadow-sm">
+        <div class="d-flex align-items-center gap-3">
+          <!-- カラーバッジ -->
+          <span class="badge fs-6 px-3 py-2" style="background-color: {{ c.color }};">
+            {{ c.name }}
+          </span>
+          <small class="text-muted">{{ item.todo_count }} 件のTODO</small>
+          <div class="ms-auto d-flex gap-1">
+            <!-- 編集モーダルトリガー -->
+            <button class="btn btn-outline-secondary btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editModal{{ c.id }}">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <!-- 削除 -->
+            <form method="POST"
+                  action="{{ url_for('categories.delete', cat_id=c.id) }}"
+                  onsubmit="return confirm('カテゴリ「{{ c.name }}」を削除しますか？\n紐付くTODOのカテゴリはなしになります。')">
+              <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 編集モーダル -->
+      <div class="modal fade" id="editModal{{ c.id }}" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h6 class="modal-title">カテゴリを編集</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST"
+                  action="{{ url_for('categories.edit', cat_id=c.id) }}">
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label small">カテゴリ名</label>
+                  <input type="text" class="form-control" name="name"
+                         value="{{ c.name }}" required maxlength="50">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label small">色</label>
+                  <input type="color" class="form-control form-control-color w-100"
+                         name="color" value="{{ c.color }}">
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary btn-sm">保存</button>
+                <button type="button" class="btn btn-secondary btn-sm"
+                        data-bs-dismiss="modal">キャンセル</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-4">
+      <i class="bi bi-tags display-5"></i>
+      <p class="mt-2">カテゴリがありません。上のフォームから追加してください。</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

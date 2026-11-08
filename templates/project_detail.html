@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}{{ root.title }} - TODO Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mt-3 mb-3">
+  <a href="{{ url_for('projects.index') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <h5 class="mb-0 flex-fill">
+    <i class="bi bi-diagram-3 me-1 text-primary"></i>{{ root.title }}
+  </h5>
+  <a href="{{ url_for('projects.node_edit', node_id=root.id) }}"
+     class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-pencil"></i>
+  </a>
+</div>
+
+<!-- プロジェクト全体の進捗 -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    {% set fc = tree.forecast %}
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="fw-semibold">全体進捗</span>
+      <span class="badge
+        {% if fc.status == 'on_track' %}bg-success
+        {% elif fc.status == 'at_risk' %}bg-warning text-dark
+        {% elif fc.status == 'overdue' %}bg-danger
+        {% else %}bg-secondary{% endif %} fs-6">
+        {{ tree.progress }}% — {{ fc.label }}
+      </span>
+    </div>
+    <div class="project-progress-bar d-flex rounded overflow-hidden mb-2"
+         style="height: 24px;">
+      {% for seg in tree.segments %}
+      {% if seg.width > 0 %}
+      <div class="{{ seg.color_class }} d-flex align-items-center justify-content-center"
+           style="width: {{ seg.width }}%; font-size: 0.75rem; color: white; overflow: hidden; white-space: nowrap;">
+        {% if seg.label %}{{ seg.label }}{% endif %}
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% if fc.forecast_date %}
+    <small class="text-muted">
+      完了予測日: {{ fc.forecast_date.strftime('%Y年%m月%d日') }}
+      （速度: {{ fc.speed_per_day }}%/日）
+    </small>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 子ノード追加ボタン -->
+<div class="d-flex justify-content-end mb-3">
+  <a href="{{ url_for('projects.node_new', parent_id=root.id) }}"
+     class="btn btn-success btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>サブタスクを追加
+  </a>
+</div>
+
+<!-- 階層ツリー -->
+{% macro render_node(item) %}
+<div class="tree-node ms-{{ item.depth * 3 }} mb-2">
+  <div class="card shadow-sm border-0
+    {% if item.forecast.status == 'overdue' %}border-start border-danger border-2
+    {% elif item.forecast.status == 'at_risk' %}border-start border-warning border-2
+    {% endif %}">
+    <div class="card-body py-2 px-3">
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <!-- 折りたたみトグル（子ありのみ） -->
+        {% if item.children %}
+        <button class="btn btn-link btn-sm p-0 text-muted tree-toggle"
+                data-bs-toggle="collapse"
+                data-bs-target="#children-{{ item.node.id }}">
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        {% else %}
+        <span class="text-muted" style="width: 24px;">
+          <i class="bi bi-dash"></i>
+        </span>
+        {% endif %}
+
+        <span class="fw-semibold flex-fill">{{ item.node.title }}</span>
+
+        <!-- 進捗モードバッジ -->
+        <span class="badge bg-light text-dark border small">
+          {% if item.node.progress_mode == 'numeric' %}数値{% else %}%平均{% endif %}
+        </span>
+
+        <!-- 進捗% -->
+        <span class="fw-bold text-primary" style="min-width: 3rem; text-align: right;">
+          {{ item.progress }}%
+        </span>
+
+        <!-- アクション -->
+        <a href="{{ url_for('projects.node_new', parent_id=item.node.id) }}"
+           class="btn btn-outline-success btn-sm py-0 px-1" title="子ノード追加">
+          <i class="bi bi-plus"></i>
+        </a>
+        <a href="{{ url_for('projects.node_edit', node_id=item.node.id) }}"
+           class="btn btn-outline-secondary btn-sm py-0 px-1" title="編集">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <form method="POST"
+              action="{{ url_for('projects.node_delete', node_id=item.node.id) }}"
+              onsubmit="return confirm('「{{ item.node.title }}」を削除しますか？')">
+          <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1"
+                  title="削除">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- プログレスバー -->
+      <div class="project-progress-bar d-flex rounded overflow-hidden mb-1"
+           style="height: 14px;">
+        {% for seg in item.segments %}
+        {% if seg.width > 0 %}
+        <div class="{{ seg.color_class }}"
+             style="width: {{ seg.width }}%; font-size: 0.6rem; overflow: hidden;"></div>
+        {% endif %}
+        {% endfor %}
+      </div>
+
+      <!-- numericモードの実績/目標表示 -->
+      {% if item.node.progress_mode == 'numeric' and item.node.target_value %}
+      <small class="text-muted">
+        {{ item.node.current_value or 0 | int }} / {{ item.node.target_value | int }}
+        {% if item.node.unit %}{{ item.node.unit }}{% endif %}
+      </small>
+      {% endif %}
+
+      <!-- 期限 -->
+      {% if item.node.due_date %}
+      <small class="text-muted ms-2">
+        <i class="bi bi-flag me-1"></i>{{ item.node.due_date.strftime('%Y/%m/%d') }}
+        {% if item.forecast.status == 'overdue' %}
+          <span class="text-danger fw-semibold">（{{ item.forecast.label }}）</span>
+        {% elif item.forecast.status == 'at_risk' %}
+          <span class="text-warning fw-semibold">（{{ item.forecast.label }}）</span>
+        {% endif %}
+      </small>
+      {% endif %}
+
+      <!-- 紐付きTODO -->
+      {% if item.todos %}
+      <div class="mt-2 ps-2 border-start border-2 border-light">
+        {% for t in item.todos %}
+        <div class="d-flex align-items-center gap-2 py-1 todo-row-small">
+          <span class="{% if t.is_completed %}text-decoration-line-through text-muted{% endif %} small flex-fill">
+            {% if t.recurrence_rule_id %}
+            <i class="bi bi-arrow-repeat text-info me-1"></i>
+            {% endif %}
+            {{ t.title }}
+          </span>
+          <div class="progress flex-shrink-0" style="width: 80px; height: 8px;">
+            <div class="progress-bar progress-level-{{ t.progress_level }}"
+                 style="width: {{ t.progress }}%"></div>
+          </div>
+          <small class="text-muted" style="min-width: 2.5rem; text-align: right;">
+            {{ t.progress }}%
+          </small>
+          <a href="{{ url_for('todos.edit', todo_id=t.id) }}"
+             class="btn btn-link btn-sm p-0 text-muted">
+            <i class="bi bi-pencil" style="font-size: 0.7rem;"></i>
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 子ノード（折りたたみ） -->
+  {% if item.children %}
+  <div class="collapse show" id="children-{{ item.node.id }}">
+    {% for child in item.children %}
+      {{ render_node(child) }}
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+<!-- ルートの子ノードを描画 -->
+{% if tree.children %}
+  {% for child in tree.children %}
+    {{ render_node(child) }}
+  {% endfor %}
+{% else %}
+<div class="text-center text-muted py-4">
+  <i class="bi bi-node-plus display-5"></i>
+  <p class="mt-2">サブタスクがありません。「サブタスクを追加」から追加してください。</p>
+</div>
+{% endif %}
+{% endblock %}

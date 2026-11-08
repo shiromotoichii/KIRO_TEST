@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}繰り返しタスク管理 - TODO Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-3">
+  <div class="col-12 col-lg-9">
+    <h5 class="mb-3">
+      <i class="bi bi-arrow-repeat me-1 text-primary"></i>繰り返しタスク管理
+    </h5>
+
+    <!-- 新規ルール追加フォーム -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-primary text-white">
+        <i class="bi bi-plus-circle me-1"></i>新しい繰り返しルールを作成
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('recurrence.new') }}">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">タイトル *</label>
+              <input type="text" class="form-control" name="title" required
+                     maxlength="200" placeholder="例: 毎日の英単語学習">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small fw-semibold">パターン</label>
+              <select class="form-select" name="pattern" id="new-pattern">
+                <option value="daily">毎日</option>
+                <option value="weekly">毎週</option>
+                <option value="monthly">毎月</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small fw-semibold">間隔</label>
+              <input type="number" class="form-control" name="interval_value"
+                     value="1" min="1">
+            </div>
+            <!-- 週: 曜日 -->
+            <div class="col-6 col-md-3" id="new-dow-wrap" style="display:none;">
+              <label class="form-label small fw-semibold">曜日</label>
+              <select class="form-select" name="day_of_week">
+                <option value="0">月</option><option value="1">火</option>
+                <option value="2">水</option><option value="3">木</option>
+                <option value="4">金</option><option value="5">土</option>
+                <option value="6">日</option>
+              </select>
+            </div>
+            <!-- 月: 日付 -->
+            <div class="col-6 col-md-3" id="new-dom-wrap" style="display:none;">
+              <label class="form-label small fw-semibold">日（1〜31）</label>
+              <input type="number" class="form-control" name="day_of_month"
+                     min="1" max="31" value="1">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small fw-semibold">終了条件</label>
+              <select class="form-select" name="end_type" id="new-end-type">
+                <option value="never">なし</option>
+                <option value="date">終了日</option>
+                <option value="count">回数</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3" id="new-end-date-wrap" style="display:none;">
+              <label class="form-label small fw-semibold">終了日</label>
+              <input type="date" class="form-control" name="end_date">
+            </div>
+            <div class="col-6 col-md-3" id="new-end-count-wrap" style="display:none;">
+              <label class="form-label small fw-semibold">回数</label>
+              <input type="number" class="form-control" name="end_count"
+                     min="1" value="30">
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>作成
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ルール一覧 -->
+    {% if rule_data %}
+    <div class="row g-3">
+      {% for item in rule_data %}
+      {% set r = item.rule %}
+      <div class="col-12 col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-start justify-content-between">
+              <h6 class="fw-semibold mb-1">
+                <i class="bi bi-arrow-repeat text-info me-1"></i>{{ r.title }}
+              </h6>
+              <span class="badge bg-secondary">{{ item.todo_count }} 件</span>
+            </div>
+            <div class="d-flex flex-wrap gap-1 mt-2">
+              <span class="badge bg-info text-dark">
+                {% if r.pattern == 'daily' %}毎日
+                {% elif r.pattern == 'weekly' %}毎週
+                {% else %}毎月{% endif %}
+                ({{ r.interval_value }}間隔)
+              </span>
+              {% if r.end_type == 'date' and r.end_date %}
+              <span class="badge bg-light text-dark border">
+                〜{{ r.end_date.strftime('%Y/%m/%d') }}まで
+              </span>
+              {% elif r.end_type == 'count' and r.end_count %}
+              <span class="badge bg-light text-dark border">
+                {{ r.end_count }}回まで
+              </span>
+              {% else %}
+              <span class="badge bg-light text-dark border">無期限</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card-footer bg-transparent border-0 d-flex gap-2">
+            <!-- 今月分生成 -->
+            <form method="POST"
+                  action="{{ url_for('recurrence.generate', rule_id=r.id) }}">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-calendar-plus me-1"></i>今月分を生成
+              </button>
+            </form>
+            <!-- 削除モーダル -->
+            <button class="btn btn-outline-danger btn-sm ms-auto"
+                    data-bs-toggle="modal"
+                    data-bs-target="#delModal{{ r.id }}">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 削除確認モーダル -->
+      <div class="modal fade" id="delModal{{ r.id }}" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h6 class="modal-title">繰り返しルールを削除</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST"
+                  action="{{ url_for('recurrence.delete', rule_id=r.id) }}">
+              <div class="modal-body">
+                <p>「{{ r.title }}」を削除します。</p>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                         name="delete_future" value="1" id="df{{ r.id }}">
+                  <label class="form-check-label" for="df{{ r.id }}">
+                    未来の未完了タスクも削除する
+                  </label>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-danger btn-sm">削除</button>
+                <button type="button" class="btn btn-secondary btn-sm"
+                        data-bs-dismiss="modal">キャンセル</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-arrow-repeat display-4"></i>
+      <p class="mt-2">繰り返しルールがありません。</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const pat = document.getElementById('new-pattern');
+const endType = document.getElementById('new-end-type');
+
+pat.addEventListener('change', function() {
+  document.getElementById('new-dow-wrap').style.display =
+    this.value === 'weekly' ? '' : 'none';
+  document.getElementById('new-dom-wrap').style.display =
+    this.value === 'monthly' ? '' : 'none';
+});
+
+endType.addEventListener('change', function() {
+  document.getElementById('new-end-date-wrap').style.display =
+    this.value === 'date' ? '' : 'none';
+  document.getElementById('new-end-count-wrap').style.display =
+    this.value === 'count' ? '' : 'none';
+});
+</script>
+{% endblock %}

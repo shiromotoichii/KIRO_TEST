@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}プロジェクト一覧 - TODO Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-3 mb-3">
+  <h5 class="mb-0">
+    <i class="bi bi-diagram-3 me-1 text-primary"></i>プロジェクト
+  </h5>
+  <a href="{{ url_for('projects.new') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>新規プロジェクト
+  </a>
+</div>
+
+{% if project_data %}
+<div class="row g-4">
+  {% for item in project_data %}
+  {% set node = item.node %}
+  {% set fc = item.forecast %}
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card shadow-sm border-0 h-100
+      {% if fc.status == 'overdue' %}border-start border-danger border-3
+      {% elif fc.status == 'at_risk' %}border-start border-warning border-3
+      {% endif %}">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h6 class="fw-bold mb-0">
+            <a href="{{ url_for('projects.detail', node_id=node.id) }}"
+               class="text-decoration-none text-dark">
+              {{ node.title }}
+            </a>
+          </h6>
+          <span class="badge
+            {% if fc.status == 'on_track' %}bg-success
+            {% elif fc.status == 'at_risk' %}bg-warning text-dark
+            {% elif fc.status == 'overdue' %}bg-danger
+            {% else %}bg-secondary{% endif %}">
+            {{ fc.label }}
+          </span>
+        </div>
+
+        {% if node.description %}
+        <p class="text-muted small mb-2">{{ node.description }}</p>
+        {% endif %}
+
+        <!-- 期限・開始日 -->
+        {% if node.due_date or node.start_date %}
+        <div class="d-flex gap-2 mb-2 small text-muted">
+          {% if node.start_date %}
+          <span><i class="bi bi-play-circle me-1"></i>{{ node.start_date.strftime('%Y/%m/%d') }}</span>
+          {% endif %}
+          {% if node.due_date %}
+          <span><i class="bi bi-flag me-1"></i>{{ node.due_date.strftime('%Y/%m/%d') }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- 3色合成プログレスバー -->
+        <div class="mb-1">
+          <div class="d-flex justify-content-between small mb-1">
+            <span class="text-muted">全体進捗</span>
+            <span class="fw-semibold">{{ item.progress | round(1) }}%</span>
+          </div>
+          <div class="project-progress-bar d-flex rounded overflow-hidden"
+               style="height: 18px;">
+            {% for seg in item.segments %}
+            {% if seg.width > 0 %}
+            <div class="{{ seg.color_class }} d-flex align-items-center justify-content-center"
+                 style="width: {{ seg.width }}%; font-size: 0.7rem; color: white; white-space: nowrap; overflow: hidden;">
+              {% if seg.label %}{{ seg.label }}{% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- numericモードの実績/目標 -->
+        {% if node.progress_mode == 'numeric' and node.target_value %}
+        <small class="text-muted">
+          {{ node.current_value or 0 | int }} / {{ node.target_value | int }}
+          {% if node.unit %}{{ node.unit }}{% endif %}
+        </small>
+        {% endif %}
+      </div>
+
+      <div class="card-footer bg-transparent border-0 d-flex justify-content-end gap-1">
+        <a href="{{ url_for('projects.detail', node_id=node.id) }}"
+           class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-eye me-1"></i>詳細
+        </a>
+        <form method="POST"
+              action="{{ url_for('projects.delete', node_id=node.id) }}"
+              onsubmit="return confirm('プロジェクト「{{ node.title }}」を削除しますか？\nすべてのサブタスクも削除されます。')">
+          <button type="submit" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center text-muted py-5">
+  <i class="bi bi-diagram-3 display-4"></i>
+  <p class="mt-2">プロジェクトがありません。「新規プロジェクト」から作成してください。</p>
+</div>
+{% endif %}
+{% endblock %}

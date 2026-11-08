@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}TODO一覧 - TODO Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-3 mb-3">
+  <div>
+    <h5 class="mb-0 d-inline-block">
+      <i class="bi bi-list-task me-1 text-primary"></i>TODO一覧
+    </h5>
+    <span class="badge bg-secondary ms-2">{{ todos|length }} 件</span>
+  </div>
+  <div class="btn-group" role="group">
+    <a href="{{ url_for('todos.index', view='calendar') }}" 
+       class="btn btn-sm {% if view_mode=='calendar' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      <i class="bi bi-calendar3"></i> カレンダー
+    </a>
+    <a href="{{ url_for('todos.index', view='list') }}" 
+       class="btn btn-sm {% if view_mode=='list' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      <i class="bi bi-list-ul"></i> リスト
+    </a>
+  </div>
+</div>
+
+<!-- フィルターエリア -->
+<form method="GET" action="{{ url_for('todos.index') }}" class="card shadow-sm border-0 mb-4">
+  <input type="hidden" name="view" value="{{ view_mode }}">
+  <div class="card-body py-2 px-3">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-3">
+        <input type="text" name="q" class="form-control form-control-sm"
+               placeholder="🔍 キーワード検索..." value="{{ q }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <select name="status" class="form-select form-select-sm">
+          <option value="all"   {% if status=='all' %}selected{% endif %}>すべて</option>
+          <option value="active"    {% if status=='active' %}selected{% endif %}>未完了</option>
+          <option value="completed" {% if status=='completed' %}selected{% endif %}>完了済み</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <select name="priority" class="form-select form-select-sm">
+          <option value="all"    {% if priority=='all' %}selected{% endif %}>優先度: 全て</option>
+          <option value="high"   {% if priority=='high' %}selected{% endif %}>高</option>
+          <option value="medium" {% if priority=='medium' %}selected{% endif %}>中</option>
+          <option value="low"    {% if priority=='low' %}selected{% endif %}>低</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <select name="category" class="form-select form-select-sm">
+          <option value="all"  {% if cat_id=='all' %}selected{% endif %}>カテゴリ: 全て</option>
+          <option value="none" {% if cat_id=='none' %}selected{% endif %}>なし</option>
+          {% for c in categories %}
+          <option value="{{ c.id }}" {% if cat_id==c.id|string %}selected{% endif %}>
+            {{ c.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <select name="sort" class="form-select form-select-sm">
+          <option value="created_desc" {% if sort=='created_desc' %}selected{% endif %}>作成日（新しい順）</option>
+          <option value="due_asc"      {% if sort=='due_asc' %}selected{% endif %}>締め切り（近い順）</option>
+          <option value="due_desc"     {% if sort=='due_desc' %}selected{% endif %}>締め切り（遠い順）</option>
+          <option value="priority"     {% if sort=='priority' %}selected{% endif %}>優先度（高い順）</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-1 d-flex gap-1">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill">
+          <i class="bi bi-funnel"></i>
+        </button>
+        <a href="{{ url_for('todos.index', view=view_mode) }}" class="btn btn-outline-secondary btn-sm flex-fill">
+          <i class="bi bi-x"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- カレンダー表示 -->
+{% if view_mode == 'calendar' %}
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <div id="calendar"></div>
+  </div>
+</div>
+
+<!-- カレンダー表示のリスト（非表示） -->
+<div id="todo-list-hidden" style="display:none;">
+{% endif %}
+
+<!-- リスト表示 -->
+{% if view_mode == 'list' or view_mode == 'calendar' %}
+{% if view_mode == 'list' %}
+{% if todos %}
+<div class="row g-3">
+  {% for todo in todos %}
+  {% set overdue  = todo.due_date and not todo.is_completed and todo.due_date < today %}
+  {% set due_today = todo.due_date and not todo.is_completed and todo.due_date == today %}
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card shadow-sm border-0 h-100
+      {% if todo.is_completed %}todo-completed{% endif %}
+      {% if overdue %}border-start border-danger border-3{% endif %}
+      {% if due_today %}border-start border-warning border-3{% endif %}">
+      <div class="card-body pb-2">
+        <div class="d-flex align-items-start gap-2 mb-2">
+          <form method="POST"
+                action="{{ url_for('todos.toggle', todo_id=todo.id) }}"
+                class="mt-1">
+            <input type="checkbox" class="form-check-input todo-toggle-check"
+                   {% if todo.is_completed %}checked{% endif %}
+                   title="完了/未完了を切り替え">
+          </form>
+          <div class="flex-fill">
+            <span class="fw-semibold {% if todo.is_completed %}todo-title-done{% endif %}">
+              {{ todo.title }}
+            </span>
+            {% if todo.recurrence_rule_id %}
+            <span class="badge bg-info text-dark ms-1" title="繰り返しタスク">
+              <i class="bi bi-arrow-repeat"></i>
+            </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-1 mb-2">
+          {% if todo.priority == 'high' %}
+            <span class="badge bg-danger">🔴 高</span>
+          {% elif todo.priority == 'medium' %}
+            <span class="badge bg-warning text-dark">🟡 中</span>
+          {% else %}
+            <span class="badge bg-success">🟢 低</span>
+          {% endif %}
+
+          {% if todo.category %}
+          <span class="badge" style="background-color: {{ todo.category.color }};">
+            {{ todo.category.name }}
+          </span>
+          {% endif %}
+
+          {% if todo.due_date %}
+          <span class="badge {% if overdue %}bg-danger{% elif due_today %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %}">
+            📅 {{ todo.due_date.strftime('%Y/%m/%d') }}
+            {% if overdue %} ⚠️期限切れ{% elif due_today %} ⚠️今日{% endif %}
+          </span>
+          {% endif %}
+        </div>
+
+        <div class="progress-wrapper mb-1">
+          <div class="progress todo-progress" title="完成度: {{ todo.progress }}%">
+            <div class="progress-bar progress-level-{{ todo.progress_level }}"
+                 role="progressbar"
+                 style="width: {{ todo.progress }}%"
+                 aria-valuenow="{{ todo.progress }}"
+                 aria-valuemin="0" aria-valuemax="100">
+              {% if todo.progress > 10 %}{{ todo.progress }}%{% endif %}
+            </div>
+          </div>
+          {% if todo.progress <= 10 %}
+          <small class="text-muted ms-1">{{ todo.progress }}%</small>
+          {% endif %}
+        </div>
+
+        {% if todo.description %}
+        <p class="text-muted small mb-2 todo-desc">{{ todo.description }}</p>
+        {% endif %}
+      </div>
+
+      <div class="card-footer bg-transparent border-0 pt-0 d-flex justify-content-end gap-1">
+        <a href="{{ url_for('todos.edit', todo_id=todo.id) }}"
+           class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <form method="POST"
+              action="{{ url_for('todos.delete', todo_id=todo.id) }}"
+              onsubmit="return confirm('「{{ todo.title }}」を削除しますか？')">
+          <button type="submit" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center text-muted py-5">
+  <i class="bi bi-inbox display-4"></i>
+  <p class="mt-2">TODOがありません。右下の＋ボタンから追加してください。</p>
+</div>
+{% endif %}
+{% endif %}
+{% endif %}
+
+{% if view_mode == 'calendar' %}
+</div>
+{% endif %}
+
+<!-- 新規追加フローティングボタン -->
+<a href="{{ url_for('todos.new') }}"
+   class="btn btn-primary btn-lg rounded-circle shadow fab-btn"
+   title="新しいTODOを追加">
+  <i class="bi bi-plus-lg"></i>
+</a>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // チェックボックスの送信処理
+  document.querySelectorAll('.todo-toggle-check').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      this.closest('form').submit();
+    });
+  });
+
+  // カレンダー表示の場合
+  {% if view_mode == 'calendar' %}
+  var calendarEl = document.getElementById('calendar');
+  var calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,listMonth'
+    },
+    events: {{ calendar_events | tojson }},
+    eventClick: function(info) {
+      window.location.href = info.event.url;
+    },
+    height: 'auto',
+    locale: 'ja',
+    buttonText: {
+      today: '今日',
+      month: '月',
+      week: '週',
+      list: 'リスト'
+    }
+  });
+  calendar.render();
+  {% endif %}
+});
+</script>
+{% endblock %}

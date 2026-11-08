@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if node %}ノード編集{% elif parent %}サブタスク追加{% else %}プロジェクト作成{% endif %}
+  - TODO Manager
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-3">
+  <div class="col-12 col-md-8 col-lg-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+          {% if node %}
+            <i class="bi bi-pencil me-2"></i>{{ node.title }} を編集
+          {% elif parent %}
+            <i class="bi bi-plus-circle me-2"></i>「{{ parent.title }}」にサブタスクを追加
+          {% else %}
+            <i class="bi bi-diagram-3 me-2"></i>新しいプロジェクトを作成
+          {% endif %}
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <!-- タイトル -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">
+              タイトル <span class="text-danger">*</span>
+            </label>
+            <input type="text" class="form-control" name="title"
+                   value="{{ node.title if node else '' }}"
+                   required maxlength="200"
+                   placeholder="例: TOEIC 850点取得">
+          </div>
+
+          <!-- 説明 -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">説明</label>
+            <textarea class="form-control" name="description" rows="2"
+                      placeholder="詳細（任意）">{{ node.description if node and node.description else '' }}</textarea>
+          </div>
+
+          <!-- 進捗モード -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">進捗モード</label>
+            <select class="form-select" name="progress_mode" id="progress-mode">
+              <option value="percent"
+                {% if not node or node.progress_mode == 'percent' %}selected{% endif %}>
+                %平均（紐付くTODOの完成度を平均）
+              </option>
+              <option value="numeric"
+                {% if node and node.progress_mode == 'numeric' %}selected{% endif %}>
+                数値目標（目標値に対する実績で計算）
+              </option>
+            </select>
+          </div>
+
+          <!-- 数値目標（numericモード時のみ） -->
+          <div id="numeric-fields"
+               class="{% if not node or node.progress_mode != 'numeric' %}d-none{% endif %}">
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-sm-4">
+                <label class="form-label fw-semibold">目標値</label>
+                <input type="number" class="form-control" name="target_value"
+                       step="0.1" min="0"
+                       value="{{ node.target_value if node and node.target_value else '' }}"
+                       placeholder="例: 6000">
+              </div>
+              <div class="col-12 col-sm-4">
+                <label class="form-label fw-semibold">現在値</label>
+                <input type="number" class="form-control" name="current_value"
+                       step="0.1" min="0"
+                       value="{{ node.current_value if node and node.current_value else '0' }}"
+                       placeholder="例: 3500">
+              </div>
+              <div class="col-12 col-sm-4">
+                <label class="form-label fw-semibold">単位</label>
+                <input type="text" class="form-control" name="unit"
+                       value="{{ node.unit if node and node.unit else '' }}"
+                       placeholder="例: 単語, 点">
+              </div>
+            </div>
+          </div>
+
+          <!-- 開始日・期限日 -->
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold">開始日</label>
+              <input type="date" class="form-control" name="start_date"
+                     value="{{ node.start_date.isoformat() if node and node.start_date else '' }}">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold">期限日</label>
+              <input type="date" class="form-control" name="due_date"
+                     value="{{ node.due_date.isoformat() if node and node.due_date else '' }}">
+            </div>
+          </div>
+
+          <!-- ボタン -->
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>保存
+            </button>
+            <a href="{{ url_for('projects.index') }}"
+               class="btn btn-outline-secondary">キャンセル</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const modeSelect = document.getElementById('progress-mode');
+const numericFields = document.getElementById('numeric-fields');
+
+modeSelect.addEventListener('change', function() {
+  numericFields.classList.toggle('d-none', this.value !== 'numeric');
+});
+</script>
+{% endblock %}

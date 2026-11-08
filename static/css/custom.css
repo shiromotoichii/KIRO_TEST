@@ -1,0 +1,165 @@
+/* ============================================================
+   TODO Manager - カスタムスタイル
+   ============================================================ */
+
+/* ── フローティング追加ボタン ─────────────────────────────── */
+.fab-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* ── TODO完成度プログレスバー ──────────────────────────────── */
+.todo-progress {
+  height: 14px;
+  border-radius: 6px;
+  background-color: #e9ecef;
+  position: relative;
+}
+
+.todo-progress .progress-bar {
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: width 0.4s ease;
+}
+
+/* 完成度レベル（色の濃さ段階） */
+.progress-level-0 {
+  background-color: #e9ecef;
+  color: #6c757d;
+}
+
+.progress-level-1 {
+  background-color: #a8d4f5;  /* 薄い青 */
+  color: #0d4f8a;
+}
+
+.progress-level-2 {
+  background-color: #5aaee8;  /* やや薄い青 */
+  color: white;
+}
+
+.progress-level-3 {
+  background-color: #1e7fc4;  /* 中程度の青 */
+  color: white;
+}
+
+.progress-level-4 {
+  background-color: #0d5a9e;  /* 濃い青 */
+  color: white;
+}
+
+.progress-level-5 {
+  background-color: #0a3660;  /* 最も濃い青（100%） */
+  color: white;
+}
+
+/* ── プロジェクト進捗バー（3色合成） ──────────────────────── */
+.project-progress-bar {
+  background-color: #e9ecef;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* 達成分（青） */
+.progress-bar-blue {
+  background-color: #1e7fc4;
+}
+
+/* 残り（グレー） */
+.progress-bar-remaining {
+  background-color: #dee2e6;
+}
+
+/* 遅延見込み分（橙） */
+.progress-bar-atrisk {
+  background-color: #fd7e14;
+}
+
+/* 期限超過分（赤） */
+.progress-bar-overdue {
+  background-color: #dc3545;
+}
+
+/* ── 完了済みTODO ──────────────────────────────────────────── */
+.todo-completed {
+  opacity: 0.6;
+}
+
+.todo-title-done {
+  text-decoration: line-through;
+  color: #6c757d;
+}
+
+/* ── TODOカードのホバー ────────────────────────────────────── */
+.card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+/* ── 説明テキストの省略 ────────────────────────────────────── */
+.todo-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.8rem;
+}
+
+/* ── 階層ツリーのインデント ────────────────────────────────── */
+.tree-node {
+  position: relative;
+}
+
+.tree-node::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 0;
+  bottom: 0;
+  border-left: 2px dashed #dee2e6;
+}
+
+.tree-node:last-child::before {
+  bottom: 50%;
+}
+
+/* ── TODO行（プロジェクト詳細内） ──────────────────────────── */
+.todo-row-small:hover {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+/* ── ナビバーのアクティブリンク ────────────────────────────── */
+.navbar-nav .nav-link.active {
+  font-weight: 600;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+/* ── レスポンシブ調整 ──────────────────────────────────────── */
+@media (max-width: 576px) {
+  .fab-btn {
+    bottom: 1rem;
+    right: 1rem;
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+}
