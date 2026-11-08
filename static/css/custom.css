@@ -153,6 +153,51 @@
   border-bottom: 2px solid rgba(255, 255, 255, 0.8);
 }
 
+/* ── カレンダー土日の色 ────────────────────────────────────── */
+.fc-day-sat,
+.fc-day-sun,
+.fc-day-weekend {
+  background-color: #fff5f5 !important;
+}
+
+.fc-day-sat .fc-daygrid-day-number,
+.fc-day-sun .fc-daygrid-day-number,
+.fc-day-weekend .fc-daygrid-day-number {
+  color: #dc3545 !important;
+  font-weight: 600;
+}
+
+/* 祝日の色（holidayクラスがある場合） */
+.fc-day-holiday {
+  background-color: #fff5f5 !important;
+}
+
+.fc-day-holiday .fc-daygrid-day-number {
+  color: #dc3545 !important;
+  font-weight: 600;
+}
+
+/* FullCalendarの日付セルに直接スタイルを適用 */
+[data-datekey] .fc-daygrid-day-holiday {
+  background-color: #fff5f5 !important;
+}
+
+.fc-daygrid-day.fc-day-holiday {
+  background-color: #fff5f5 !important;
+}
+
+.fc-daygrid-day.fc-day-holiday .fc-daygrid-day-number {
+  color: #dc3545 !important;
+  font-weight: 600;
+}
+
+/* タイムグリッドビューの土日 */
+.fc-timegrid-slot.fc-day-sat,
+.fc-timegrid-slot.fc-day-sun,
+.fc-timegrid-slot.fc-day-weekend {
+  background-color: #fff5f5 !important;
+}
+
 /* ── レスポンシブ調整 ──────────────────────────────────────── */
 @media (max-width: 576px) {
   .fab-btn {

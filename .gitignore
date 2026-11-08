@@ -19,4 +19,4 @@ __pycache__/
 *.log
 
 # Flaskローカルデータ
-instance/
+instance/venv_old/

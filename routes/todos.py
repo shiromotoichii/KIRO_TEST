@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from extensions import db
 from models import Todo, Category, ProjectNode
+from services.holidays import get_all_holidays, is_weekend, is_holiday
 
 todos_bp = Blueprint("todos", __name__)
 
@@ -98,6 +99,10 @@ def index():
             
             calendar_events.append(event)
 
+    # 祝日の日付リストを作成（services.holidaysから取得）
+    all_holidays = get_all_holidays()
+    holidays = list(all_holidays.keys())
+
     return render_template(
         "index.html",
         todos=todos,
@@ -107,6 +112,7 @@ def index():
         cat_id=cat_id, sort=sort,
         view_mode=view_mode,
         calendar_events=calendar_events,
+        holidays=holidays,
     )
 
 

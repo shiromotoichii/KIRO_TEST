@@ -216,8 +216,18 @@ document.addEventListener('DOMContentLoaded', function() {
   // カレンダー表示の場合
   {% if view_mode == 'calendar' %}
   var calendarEl = document.getElementById('calendar');
+
+  // 日本の祝日（日付リスト）
+  var holidays = {{ holidays | tojson }};
+  console.log('Holidays list:', holidays);
+  console.log('2026-11-03 in holidays:', holidays.includes('2026-11-03'));
+  console.log('2026-11-23 in holidays:', holidays.includes('2026-11-23'));
+  console.log('2026-11-04 in holidays:', holidays.includes('2026-11-04'));
+  console.log('2026-11-24 in holidays:', holidays.includes('2026-11-24'));
+
   var calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
+    firstDay: 1,  // 週の始まりを月曜日に設定（0=日, 1=月）
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
@@ -234,6 +244,43 @@ document.addEventListener('DOMContentLoaded', function() {
       month: '月',
       week: '週',
       list: 'リスト'
+    },
+    dayCellDidMount: function(arg) {
+      // ローカルタイムゾーンで日付を取得（UTC変換を避ける）
+      var year = arg.date.getFullYear();
+      var month = String(arg.date.getMonth() + 1).padStart(2, '0');
+      var day = String(arg.date.getDate()).padStart(2, '0');
+      var dateStr = year + '-' + month + '-' + day;
+      var dayOfWeek = arg.date.getDay();
+
+      console.log('Checking date:', dateStr, 'dayOfWeek:', dayOfWeek);
+
+      // 既存の曜日クラスを削除
+      arg.el.classList.remove('fc-day-sat', 'fc-day-sun', 'fc-day-mon', 'fc-day-tue', 'fc-day-wed', 'fc-day-thu', 'fc-day-fri');
+
+      // 日曜日（0）の場合のみ赤色を適用
+      if (dayOfWeek === 0) {
+        arg.el.classList.add('fc-day-sun');
+        arg.el.classList.add('fc-day-weekend');
+      }
+      // 土曜日（6）の場合のみ赤色を適用
+      else if (dayOfWeek === 6) {
+        arg.el.classList.add('fc-day-sat');
+        arg.el.classList.add('fc-day-weekend');
+      }
+
+      // 祝日の場合（土日以外）
+      if (holidays.indexOf(dateStr) !== -1 && dayOfWeek !== 0 && dayOfWeek !== 6) {
+        arg.el.classList.add('fc-day-holiday');
+        // インラインスタイルでも赤色を適用（CSSの優先度を確保）
+        arg.el.style.backgroundColor = '#fff5f5';
+        var dayNumber = arg.el.querySelector('.fc-daygrid-day-number');
+        if (dayNumber) {
+          dayNumber.style.color = '#dc3545';
+          dayNumber.style.fontWeight = '600';
+        }
+        console.log('Holiday applied:', dateStr);
+      }
     }
   });
   calendar.render();
